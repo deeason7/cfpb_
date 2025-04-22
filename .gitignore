@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Jupyter
+*.ipynb_checkpoints
+
+# Environment
+.env
+.venv/
+venv/
+
+# Data and logs
+*.sqlite3
+*.h5
+*.log
+*.csv
+*.tsv
+
+# System files
+.DS_Store
+
+# Python package metadata
+*.egg-info/
+
