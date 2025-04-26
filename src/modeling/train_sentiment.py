@@ -13,8 +13,10 @@ from sklearn.metrics import classification_report
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, Bidirectional, LSTM, Dropout, Dense
+from tensorflow.keras.layers import Embedding, Bidirectional, LSTM, Dropout, Dense, SpatialDropout1D
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.optimizers.legacy import Adam
+from tensorflow.keras import regularizers
 
 from textblob import TextBlob
 
@@ -26,10 +28,7 @@ if project_root not in sys.path:
 
 def weak_sentiment(text: str) -> str:
     """
-    Rule‐based sentiment labeling using TextBlob polarity:
-    - polarity > 0.1 → positive
-    - polarity < -0.1 → negative
-    - else → neutral
+    Rule‐based sentiment labeling using TextBlob polarity.
     """
     if not isinstance(text, str) or len(text.strip()) < 5:
         return "neutral"
@@ -45,7 +44,6 @@ def weak_sentiment(text: str) -> str:
 def prepare_data(path="../data/processed/enhanced_consumer_complaints.csv", vocab_size=15000, max_len=250):
     """
     Load and preprocess text data for sentiment classification.
-    Returns encoded sequences and labels, tokenizer, and label encoder.
     """
     df = pd.read_csv(path)
     df = df[df['text_cleaned'].notna()].copy()
@@ -75,23 +73,21 @@ def prepare_data(path="../data/processed/enhanced_consumer_complaints.csv", voca
     return X_train_seq, X_val_seq, y_train, y_val, tokenizer, le
 
 
-def build_model(vocab_size=15000, max_len=250):
+def build_model(vocab_size=25000, max_len=250):
     """
-    BiLSTM model with dropout for sentiment classification.
+   Simple BiLSTM without over-regularization.
     """
     model = Sequential([
         Embedding(input_dim=vocab_size, output_dim=128, input_length=max_len),
-        Dropout(0.2),
-        Bidirectional(LSTM(64, return_sequences=True)),
+        Bidirectional(LSTM(64, return_sequences=False)),
         Dropout(0.3),
-        Bidirectional(LSTM(32)),
         Dense(64, activation='relu'),
         Dropout(0.3),
-        Dense(3, activation='softmax')  # 3 sentiment classes
+        Dense(3, activation='softmax')
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
-        optimizer='adam',
+        optimizer='adam',  # Default Adam optimizer
         metrics=['accuracy']
     )
     return model
@@ -99,7 +95,7 @@ def build_model(vocab_size=15000, max_len=250):
 
 def train_and_evaluate_sentiment():
     """
-    Train the sentiment classification model, save outputs.
+    Train the sentiment classification model and save outputs.
     """
     X_train_seq, X_val_seq, y_train, y_val, tokenizer, le = prepare_data()
 
@@ -113,15 +109,15 @@ def train_and_evaluate_sentiment():
     model = build_model()
 
     # Callbacks
-    early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    early_stop = EarlyStopping(monitor='val_loss', patience=4, restore_best_weights=True)
     lr_schedule = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2)
 
     # Train
     history = model.fit(
         X_train_seq, y_train,
         validation_data=(X_val_seq, y_val),
-        epochs=20,
-        batch_size=128,
+        epochs=30,  # Allow more epochs
+        batch_size=64,  # Smaller batch size
         class_weight=class_weights,
         callbacks=[early_stop, lr_schedule],
         verbose=2
@@ -154,4 +150,4 @@ def train_and_evaluate_sentiment():
     })
     predictions_df.to_csv("../outputs/predictions_sentiment.csv", index=False)
 
-    print(" Sentiment model trained, evaluated, and outputs saved.")
+    print("Sentiment model trained, evaluated, and outputs saved.")
