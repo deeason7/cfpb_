@@ -1,13 +1,29 @@
-### Preprocessing Summary
+##  Sprint 2: Deep Preprocessing Summary
 
-- Records with complaint narrative retained: 66,806
-- Dropped columns: tags, company_public_response, consumer_consent_provided, consumer_complaint_narrative, complaint_id, date_received, date_sent_to_company, submitted_via, zipcode, sub_issue, sub_product, consumer_disputed?, company_response_to_consumer
-- Cleaned text: Lowercased, special chars/HTML/URLs/emails removed, extra whitespace stripped
-- Binary and encoded fields added: `consumer_disputed_binary`, `timely_response_binary`, `company_response_encoded`
-- Text length feature added
-- State nulls filled with 'Unknown'
+**Records Retained:** 66,806
+
+###  Major Preprocessing Steps:
+- Dropped columns irrelevant for sentiment modeling: tags, company_public_response, consumer_consent_provided, consumer_complaint_narrative, complaint_id, date_received, date_sent_to_company, submitted_via, zipcode, sub_issue, sub_product, consumer_disputed?, company_response_to_consumer
+- Text cleaning applied: Lowercased, special characters/HTML/URLs/emails/numbers removed, normalized spacing.
+- Smart Weak Sentiment Labeling using:
+  - TextBlob polarity & subjectivity
+  - Keyword-based checks (extreme negative, negative, neutral indicators)
+  - POS tagging for emphasis and negation adjustments
+- Added Encoded/Binary Columns:
+  - `consumer_disputed_binary`
+  - `timely_response_binary`
+  - `sentiment_encoded` (0: Neutral, 1: Negative, 2: Extreme Negative)
+- Added Features:
+  - `text_length` (word count of cleaned text)
+  - `product_dispute_rate` (target encoding with smoothing)
+  - `company_dispute_rate` (target encoding with smoothing)
+  - `sentiment_timely_interaction` (sentiment * timely response)
+  - `company_timely_interaction` (company dispute rate * timely response)
+- Missing states filled with 'Unknown'.
+- Carefully preserved complaint narratives with sufficient information.
 
 ---
 
-####  Sample Cleaned Complaint
+### 📋 Sample of a Cleaned Complaint Narrative:
+
 > xxxx has claimed i owe them for xxxx years despite the proof of payment i sent them canceled check and their ownpaid invoice for they continue to insist i owe them and collection agencies are after me how can i stop this harassment for a bill i already paid four years ago

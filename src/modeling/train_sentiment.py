@@ -12,142 +12,119 @@ from sklearn.metrics import classification_report
 
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, Bidirectional, LSTM, Dropout, Dense, SpatialDropout1D
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import (Input, Embedding, Bidirectional, LSTM, Dense,
+                                     Dropout, Concatenate)
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers.legacy import Adam
-from tensorflow.keras import regularizers
 
-from textblob import TextBlob
-
-# Add src/ path to sys
+# Set up path
 project_root = os.path.abspath("..")
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-
-def weak_sentiment(text: str) -> str:
-    """
-    Rule‐based sentiment labeling using TextBlob polarity.
-    """
-    if not isinstance(text, str) or len(text.strip()) < 5:
-        return "neutral"
-    score = TextBlob(text).sentiment.polarity
-    if score > 0.1:
-        return "positive"
-    elif score < -0.1:
-        return "negative"
-    else:
-        return "neutral"
-
-
-def prepare_data(path="../data/processed/enhanced_consumer_complaints.csv", vocab_size=15000, max_len=250):
-    """
-    Load and preprocess text data for sentiment classification.
-    """
+def prepare_data(path="../data/processed/consumer_complaints_final.csv", vocab_size=25000, max_len=250):
     df = pd.read_csv(path)
     df = df[df['text_cleaned'].notna()].copy()
 
-    # Weak sentiment labeling
-    df['sentiment'] = df['text_cleaned'].apply(weak_sentiment)
-
-    # Encode labels
+    # Label encoding
     le = LabelEncoder()
     df['sentiment_encoded'] = le.fit_transform(df['sentiment'])
 
-    X = df['text_cleaned']
+    # Text and structured features
+    X_text = df['text_cleaned']
+    X_struct = df[['text_length', 'timely_response_binary', 'product_dispute_rate',
+                   'company_dispute_rate', 'keyword_flag']].values.astype(np.float32)
     y = df['sentiment_encoded']
 
-    # Split data
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=42
+    # Tokenizer
+    tokenizer = Tokenizer(num_words=vocab_size, oov_token="<OOV>")
+    tokenizer.fit_on_texts(X_text)
+    X_seq = pad_sequences(tokenizer.texts_to_sequences(X_text), maxlen=max_len)
+
+    # Split into train/val/test
+    X_seq_train, X_seq_temp, X_struct_train, X_struct_temp, y_train, y_temp = train_test_split(
+        X_seq, X_struct, y, test_size=0.3, stratify=y, random_state=42
+    )
+    X_seq_val, X_seq_test, X_struct_val, X_struct_test, y_val, y_test = train_test_split(
+        X_seq_temp, X_struct_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42
     )
 
-    # Tokenize
-    tokenizer = Tokenizer(num_words=vocab_size, oov_token="<OOV>")
-    tokenizer.fit_on_texts(X_train)
-
-    X_train_seq = pad_sequences(tokenizer.texts_to_sequences(X_train), maxlen=max_len)
-    X_val_seq = pad_sequences(tokenizer.texts_to_sequences(X_val), maxlen=max_len)
-
-    return X_train_seq, X_val_seq, y_train, y_val, tokenizer, le
-
+    return (X_seq_train, X_struct_train, y_train,
+            X_seq_val, X_struct_val, y_val,
+            X_seq_test, X_struct_test, y_test,
+            tokenizer, le)
 
 def build_model(vocab_size=25000, max_len=250):
-    """
-   Simple BiLSTM without over-regularization.
-    """
-    model = Sequential([
-        Embedding(input_dim=vocab_size, output_dim=128, input_length=max_len),
-        Bidirectional(LSTM(64, return_sequences=False)),
-        Dropout(0.3),
-        Dense(64, activation='relu'),
-        Dropout(0.3),
-        Dense(3, activation='softmax')
-    ])
+    text_input = Input(shape=(max_len,), name="text_input")
+    struct_input = Input(shape=(5,), name="struct_input")
+
+    x = Embedding(input_dim=vocab_size, output_dim=128)(text_input)
+    x = Bidirectional(LSTM(64))(x)
+    x = Dropout(0.3)(x)
+
+    merged = Concatenate()([x, struct_input])
+    merged = Dense(64, activation='relu')(merged)
+    merged = Dropout(0.3)(merged)
+    output = Dense(3, activation='softmax')(merged)
+
+    model = Model(inputs=[text_input, struct_input], outputs=output)
     model.compile(
         loss='sparse_categorical_crossentropy',
-        optimizer='adam',  # Default Adam optimizer
+        optimizer=Adam(),
         metrics=['accuracy']
     )
     return model
 
-
 def train_and_evaluate_sentiment():
-    """
-    Train the sentiment classification model and save outputs.
-    """
-    X_train_seq, X_val_seq, y_train, y_val, tokenizer, le = prepare_data()
+    (X_seq_train, X_struct_train, y_train,
+     X_seq_val, X_struct_val, y_val,
+     X_seq_test, X_struct_test, y_test,
+     tokenizer, le) = prepare_data()
 
-    # Compute class weights
     class_weights = dict(
         zip(np.unique(y_train),
             compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train))
     )
 
-    # Build model
     model = build_model()
 
-    # Callbacks
     early_stop = EarlyStopping(monitor='val_loss', patience=4, restore_best_weights=True)
     lr_schedule = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2)
 
-    # Train
     history = model.fit(
-        X_train_seq, y_train,
-        validation_data=(X_val_seq, y_val),
-        epochs=30,  # Allow more epochs
-        batch_size=64,  # Smaller batch size
+        {"text_input": X_seq_train, "struct_input": X_struct_train}, y_train,
+        validation_data=({"text_input": X_seq_val, "struct_input": X_struct_val}, y_val),
+        epochs=30,
+        batch_size=64,
         class_weight=class_weights,
         callbacks=[early_stop, lr_schedule],
         verbose=2
     )
 
-    # Predict
-    y_pred_prob = model.predict(X_val_seq)
+    # Final test evaluation
+    y_pred_prob = model.predict({"text_input": X_seq_test, "struct_input": X_struct_test})
     y_pred = np.argmax(y_pred_prob, axis=1)
 
-    # Save model
     model.save("../models/sentiment_model.keras")
 
-    # Save tokenizer
     with open("../outputs/tokenizer_sentiment.pkl", "wb") as f:
         pickle.dump(tokenizer, f)
 
-    # Save label encoder
     with open("../outputs/label_encoder_sentiment.pkl", "wb") as f:
         pickle.dump(le, f)
 
-    # Save evaluation report
-    report = classification_report(y_val, y_pred, target_names=le.classes_, output_dict=True)
+    report = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
     with open("../outputs/sentiment_accuracy.txt", "w") as f:
         json.dump(report, f, indent=2)
 
-    # Save predictions
     predictions_df = pd.DataFrame({
-        "true_sentiment": le.inverse_transform(y_val),
+        "true_sentiment": le.inverse_transform(y_test),
         "predicted_sentiment": le.inverse_transform(y_pred)
     })
     predictions_df.to_csv("../outputs/predictions_sentiment.csv", index=False)
 
-    print("Sentiment model trained, evaluated, and outputs saved.")
+    print("Sentiment model trained and evaluated on test data.")
+
+if __name__ == '__main__':
+    train_and_evaluate_sentiment()
