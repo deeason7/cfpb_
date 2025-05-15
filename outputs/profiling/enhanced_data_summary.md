@@ -1,5 +1,2 @@
-### Summary
-* Missing sub_product handled.
-* Categorical features reduced complexity.
-* Numeric features normalized; new dispute rate included.
-* Saved enhanced dataset to CSV
+Eda Summary
+- Analyzed Complaint Length- Analyzed Sentiment Distribution- Analyzed Product vs Sentiment- Analyzed Company vs Sentiment- Analyzed Crosstab between Timely Response and Sentiment- Analyzed Certain Keyword Presence vs Sentiment- Implemented the outcomes of the anaylsis
