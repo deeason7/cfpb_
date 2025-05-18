@@ -1,10 +1,16 @@
+"""
+Module: Sentiment Classification Pipeline
+
+Defines routines to load and preprocess data, construct a hybrid LSTM + structured-input model, and train/evaluate the model end-to-end, including saving all necessary artifacts for downstream use.
+"""
 #Import required libraries
-import pandas as pd
-import numpy as np
 import pickle
 import os
 import sys
 import json
+
+import pandas as pd
+import numpy as np
 
 # Scikit-learn tools for preprocessing and evaluation
 from sklearn.utils.class_weight import compute_class_weight
@@ -26,7 +32,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Function to prepare text and structured data
-def prepare_data(path="../data/processed/consumer_complaints_final.csv", vocab_size=25000, max_len=250):
+def prepare_data(path="../data/processed/consumer_complaints_final.csv", vocab_size=25000, max_len=250)->tuple:
     """
     Load and preprocess data for sentiment classification
 
@@ -89,7 +95,17 @@ def prepare_data(path="../data/processed/consumer_complaints_final.csv", vocab_s
             tokenizer, le)
 
 # Function to build a hybrid LSTM + structured model 
-def build_model(vocab_size=25000, max_len=250):
+def build_model(vocab_size=25000, max_len=250) ->  Model:
+    """
+    Construct  a hybrid Keras model that processes text via an Embedding + BiLSTM and merges with structured features for final classification.
+
+    Args:
+    vocab_size(int): Vocabulary size of the tokenizer.
+    max_len(int): Length of text sequences.
+
+    Returns:
+    Model: Compiled Keras model ready for training.
+    """
     #Input layers for text and structured data
     text_input = Input(shape=(max_len,), name="text_input")
     struct_input = Input(shape=(5,), name="struct_input")
@@ -116,6 +132,14 @@ def build_model(vocab_size=25000, max_len=250):
 
 # Full training, evaluation, and artifact saving pipeline
 def train_and_evaluate_sentiment():
+    """
+    Orchestrate the full sentiment training pipeline:
+    1. Load and split data
+    2. Build model and compute class weights
+    3. Train with callbacks for early stopping and LR reduction
+    4. Evaluate on test set and generate a classification report
+    5. Save model, tokenizer, label encoder, and evaluation artifacts
+    """
     # Load and preprocess data
     (X_seq_train, X_struct_train, y_train,
      X_seq_val, X_struct_val, y_val,
