@@ -1,13 +1,13 @@
 # Consumer Complaint Sentiment Insights and Classification System
 
-## 🏛️ Context & Motivation
+## Context & Motivation
 The Consumer Financial Protection Bureau (CFPB) collects thousands of consumer complaints across financial services. Understanding the emotional intensity of these complaint narratives (Neutral, Negative, Extreme Negative) enables us to:
 - Detect systemic issues in financial services  
 - Improve customer-service strategies at institutions  
 - Inform policy decisions and enforcement priorities  
 - Prioritize high-risk cases for investigation  
 
-## 🎯 Problem Statement
+##  Problem Statement
 How can we leverage NLP and deep learning to build a scalable, production-ready pipeline that classifies consumer-complaint narratives into three sentiment levels:  
 1. **Neutral**  
 2. **Negative**  
@@ -15,9 +15,9 @@ How can we leverage NLP and deep learning to build a scalable, production-ready 
 
 ---
 
-## 🗺️ Project Workflow & Sprints
+## Project Workflow & Sprints
 
-| Sprint   | Objective                                                                                       | Status               |
+|          | Objective                                                                                       | Status               |
 |----------|-------------------------------------------------------------------------------------------------|----------------------|
 | **1**    | Load & explore raw dataset; perform basic structural cleaning                                    | ✅ Complete          |
 | **2**    | Clean & normalize complaint text; engineer initial “weak” sentiment labels                       | ✅ Complete          |
@@ -29,7 +29,7 @@ How can we leverage NLP and deep learning to build a scalable, production-ready 
 
 ---
 
-## 🔍 Hypotheses Explored
+##  Hypotheses Explored
 
 | ID  | Hypothesis                                                                                         |
 |-----|----------------------------------------------------------------------------------------------------|
@@ -41,7 +41,7 @@ How can we leverage NLP and deep learning to build a scalable, production-ready 
 
 ---
 
-## 🛠️ Tools & Technologies
+##  Tools & Technologies
 
 - **Language & Notebooks:** Python 3.8 (via Pyenv), Jupyter Notebooks  
 - **Data & Visualization:** pandas, NumPy, Matplotlib, Seaborn  
@@ -52,7 +52,7 @@ How can we leverage NLP and deep learning to build a scalable, production-ready 
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 .
 ├── .gitignore
