@@ -19,11 +19,11 @@ How can we leverage NLP and deep learning to build a scalable, production-ready 
 
 |          | Objective                                                                                       | Status               |
 |----------|-------------------------------------------------------------------------------------------------|----------------------|
-| **1**    | Load & explore raw dataset; perform basic structural cleaning                                    | ✅ Complete          |
-| **2**    | Clean & normalize complaint text; engineer initial “weak” sentiment labels                       | ✅ Complete          |
-| **3**    | Exploratory Data Analysis on product, company, sentiment & interaction features (validate H1–H5) | ✅ Complete          |
-| **4**    | Train baseline BiLSTM deep-learning model for sentiment classification                            | ✅ Complete          |
-| **5**    | Test & demonstrate the trained BiLSTM model (predictions, confidence, interpretability)           | ⏳ In Progress / TODO |
+| **1**    | Load & explore raw dataset; perform basic structural cleaning                                    |  Complete          |
+| **2**    | Clean & normalize complaint text; engineer initial “weak” sentiment labels                       |  Complete          |
+| **3**    | Exploratory Data Analysis on product, company, sentiment & interaction features (validate H1–H5) |  Complete          |
+| **4**    | Train baseline BiLSTM deep-learning model for sentiment classification                            |  Complete          |
+| **5**    | Test & demonstrate the trained BiLSTM model (predictions, confidence, interpretability)           | Complete           |
 | **6**    | Develop interactive Tableau dashboards for stakeholder insights (geography, sentiment, product)   | ⏳ TODO              |
 | **7**    | Wrap up: organize GitHub repo, document structure, summarize results & findings                   | ⏳ TODO              |
 
