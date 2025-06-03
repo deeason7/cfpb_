@@ -15,6 +15,7 @@ venv/
 
 # Data and logs
 *.sqlite3
+*.db
 *.h5
 *.log
 *.csv
